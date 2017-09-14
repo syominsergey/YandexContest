@@ -12,7 +12,7 @@ public class No1_Casting {
 
     private static Input readInput() throws IOException{
         Input input = new Input();
-        BufferedReader reader = new BufferedReader(new FileReader("casting.in"));
+        BufferedReader reader = new BufferedReader(new FileReader(new File(working_dir, "casting.in")));
         String line;
         try {
             line = reader.readLine();
@@ -29,8 +29,15 @@ public class No1_Casting {
         }
         return input;
     }
+    
+    private static File working_dir;
 
     public static void main(String[] args) throws IOException {
+        if("Dalvik".equals(System.getProperty("java.vm.name"))){
+            working_dir = new File("/storage/emulated/0/AppProjects/YandexContest/Roi_2013_1/working-dir");
+        } else {
+            working_dir = new File(".");
+        }
         Input input = readInput();
         int answer;
         switch (input.mode){
@@ -59,7 +66,7 @@ public class No1_Casting {
                 throw new IllegalArgumentException("Неизвестное значение mode " + input.mode);
             }
         }
-        PrintWriter printWriter = new PrintWriter("casting.out");
+        PrintWriter printWriter = new PrintWriter(new File(working_dir, "casting.out"));
         try {
             printWriter.print(answer);
         } finally {
