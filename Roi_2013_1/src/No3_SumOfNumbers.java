@@ -1,4 +1,6 @@
 import java.io.*;
+import java.text.*;
+import java.util.*;
 
 public class No3_SumOfNumbers
 {
@@ -10,66 +12,114 @@ public class No3_SumOfNumbers
         this.working_dir = working_dir;
     }
     
-    byte[] readNumberFromFile(File file) throws IOException {
+    public static class LongNumber {
+        byte[] ciphers;
+        int start_pos;
+
+        public LongNumber(byte[] ciphers, int start_pos)
+        {
+            this.ciphers = ciphers;
+            this.start_pos = start_pos;
+        }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("LongNumber{ciphers=%s, start_pos=%s}", Arrays.toString(ciphers), start_pos);
+        }
+    }
+    
+    LongNumber readNumberFromFile(File file) throws IOException {
         int size = (int) file.length();
-        byte[] number = new byte[size];
-        InputStream in = new BufferedInputStream(new FileInputStream(file));
+        if(size==0){
+            throw new IOException("входной файл имеет нулевой размер");
+        }
+        PushbackInputStream in = new PushbackInputStream(new BufferedInputStream(new FileInputStream(file)), 1);
         try {
-            for(int i = size-1; i>=0; i--){
-                int nextCipher = in.read();
+            int nextCipher = -1;
+            while(true){
+                if(size==0){
+                    throw new IllegalArgumentException("во входном файле не обнаружено цифр");
+                }
+                nextCipher = in.read();
                 if(nextCipher==-1){
                     throw new IOException("Преждевременное окончание файла!");
                 }
-                //todo проверка диапазона цифр
-                number[i] = (byte) (nextCipher - '0');
+                if(nextCipher>'9'){
+                    size--;
+                    continue;
+                }
+                if(nextCipher<'0'){
+                    size--;
+                    continue;
+                }
+                in.unread(nextCipher);
+                break;
             }
+            byte[] number = new byte[size];
+            int start_pos;
+            for(start_pos = size-1; start_pos>=0; start_pos--){
+                nextCipher = in.read();
+                if(nextCipher==-1){
+                    throw new IOException("Преждевременное окончание файла!");
+                }
+                if(nextCipher>'9'){
+                    start_pos++;
+                    break;
+                }
+                if(nextCipher<'0'){
+                    start_pos++;
+                    break;
+                }
+                number[start_pos] = (byte) (nextCipher - '0');
+            }
+            return new LongNumber(number, start_pos);
         } finally {
             in.close();
         }
-        return number;
     }
     
-    void incrementNumber(byte[] number){
-        for(int i = 0; i<number.length; i++){
-            if(number[i]<9){
-                number[i]++;
+    void incrementNumber(LongNumber number){
+        for(int i = number.start_pos; i<number.ciphers.length; i++){
+            if(number.ciphers[i]<9){
+                number.ciphers[i]++;
                 return;
             } else {
-                number[i] = 0;
+                number.ciphers[i] = 0;
             }
         }
     }
     
-    void decrementNumber(byte[] number){
-        for(int i = 0; i<number.length; i++){
-            if(number[i]>0){
-                number[i]--;
+    void decrementNumber(LongNumber number){
+        for(int i = number.start_pos; i<number.ciphers.length; i++){
+            if(number.ciphers[i]>0){
+                number.ciphers[i]--;
                 return;
             } else {
-                number[i] = 9;
+                number.ciphers[i] = 9;
             }
         }
     }
     
-    boolean checkNumberIsBeautiful(byte[] number){
-        int bound = number.length - 1;
-        for(int i = 0; i<bound; i++){
-            if(number[i]==number[i+1]){
+    boolean checkNumberIsBeautiful(LongNumber number){
+        int bound = number.ciphers.length - 1;
+        for(int i = number.start_pos; i<bound; i++){
+            if(number.ciphers[i]==number.ciphers[i+1]){
                 return false;
             }
         }
         return true;
     }
     
-    byte[] computeAnswer(byte[] number){
-        byte[] answer = new byte[10];
-        if(number[number.length-1]==1){
+    LongNumber computeAnswer(LongNumber number){
+        LongNumber answer = new LongNumber(new byte[10], 0);
+        if(number.ciphers[number.ciphers.length-1]==1){
             return answer;
         }
-        byte[] numberA = new byte[number.length];
-        numberA[numberA.length - 1] = 1;
-        byte[] numberB = (byte[]) number.clone();
-        numberB[numberB.length - 1]--;
+        LongNumber numberA = new LongNumber(new byte[number.ciphers.length], number.start_pos);
+        numberA.ciphers[numberA.ciphers.length - 1] = 1;
+        LongNumber numberB = number;
+        numberB.ciphers[numberB.ciphers.length - 1]--;
         while(true){
             try {
                 if(!checkNumberIsBeautiful(numberA)){
@@ -79,18 +129,18 @@ public class No3_SumOfNumbers
                     continue;
                 }
                 incrementNumber(answer);
-                if(answer[answer.length-1] != 1){
+                if(answer.ciphers[answer.ciphers.length-1] != 1){
                     continue;
                 }
-                if(answer[0] != 7){
+                if(answer.ciphers[answer.start_pos] != 7){
                     continue;
                 }
-                answer[answer.length-1] = 0;
-                answer[0] = 0;
+                answer.ciphers[answer.ciphers.length-1] = 0;
+                answer.ciphers[answer.start_pos] = 0;
             } finally {
                 //изменение чисел a и b или выход из цикла
                 decrementNumber(numberB);
-                if(numberB[numberB.length-1]==0){
+                if(numberB.ciphers[numberB.ciphers.length-1]==0){
                     break;
                 }
                 incrementNumber(numberA);
@@ -99,21 +149,21 @@ public class No3_SumOfNumbers
         return answer;
     }
     
-    void writeAnswer(byte[] answer, File file) throws IOException {
+    void writeAnswer(LongNumber answer, File file) throws IOException {
         PrintWriter pw = new PrintWriter(file);
         try {
-            int start_pos = answer.length - 1;
-            for(; start_pos>=0; start_pos--){
-                if(answer[start_pos]>0){
+            int start_pos = answer.ciphers.length - 1;
+            for(; start_pos>=answer.start_pos; start_pos--){
+                if(answer.ciphers[start_pos]>0){
                     break;
                 }
             }
-            if(start_pos==-1){
+            if(start_pos==answer.start_pos-1){
                 pw.print('0');
                 return;
             }
-            for(int i = start_pos; i>=0; i--){
-                pw.print(answer[i]);
+            for(int i = start_pos; i>=answer.start_pos; i--){
+                pw.print(answer.ciphers[i]);
             }
         } finally {
             pw.close();
@@ -121,8 +171,8 @@ public class No3_SumOfNumbers
     }
     
     public void run() throws IOException {
-        byte[] number = readNumberFromFile(new File(working_dir, "aplusb.in"));
-        byte[] answer = computeAnswer(number);
+        LongNumber number = readNumberFromFile(new File(working_dir, "aplusb.in"));
+        LongNumber answer = computeAnswer(number);
         writeAnswer(answer, new File(working_dir, "aplusb.out"));
     }
     
