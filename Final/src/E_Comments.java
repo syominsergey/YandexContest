@@ -126,6 +126,59 @@ public class E_Comments {
 
     private final static boolean DEBUG = false;
 
+    void run2() throws FileNotFoundException{
+        Scanner scanner = new Scanner(new FileInputStream("input.txt"));
+        char[] program = scanner.nextLine().toCharArray();
+        boolean[] commentMap = new boolean[program.length];
+        int n = scanner.nextInt();
+        for (int commandNum = 0; commandNum < n; commandNum++) {
+            int command = scanner.nextInt();
+            int pos = scanner.nextInt() - 1;
+            switch (command) {
+                case 1: {
+                    char newChar = scanner.nextLine().charAt(1);
+                    program[pos] = newChar;
+                    break;
+                }
+                case 2: {
+                    boolean inComment = false;
+                    int i = 0;
+                    while (i <= pos) {
+                        if (!inComment) {
+                            if ((program[i] == '/') && (i < program.length - 1) && (program[i + 1] == '*')) {
+                                commentMap[i] = true;
+                                commentMap[i + 1] = true;
+                                inComment = true;
+                                i += 2;
+                            } else {
+                                commentMap[i] = false;
+                                i++;
+                            }
+                        } else {
+                            if ((program[i] == '*') && (i < program.length - 1) && (program[i + 1] == '/')) {
+                                commentMap[i] = true;
+                                commentMap[i + 1] = true;
+                                inComment = false;
+                                i += 2;
+                            } else {
+                                commentMap[i] = true;
+                                i++;
+                            }
+                        }
+                    }
+                    if (commentMap[pos]) {
+                        printYes();
+                    } else {
+                        printNo();
+                    }
+                    break;
+                }
+                default:
+                    throw new IllegalArgumentException("Неизвестный код команды " + command);
+            }
+        }
+    }
+
     void run() throws FileNotFoundException {
         Scanner scanner = new Scanner(new FileInputStream("input.txt"));
         char[] program = scanner.nextLine().toCharArray();
@@ -268,6 +321,6 @@ public class E_Comments {
     }
 
     public static void main(String[] args) throws FileNotFoundException {
-        new E_Comments().run();
+        new E_Comments().run2();
     }
 }
